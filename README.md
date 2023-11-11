@@ -1,6 +1,6 @@
 # logman.py
 
-README.md for Log Rotation and Archiving Script
+
 Overview
 This Python script is designed for managing log files in a robust and efficient manner. It facilitates log rotation, archiving of old log files, and offers an option to transfer archived logs to a remote server using SCP (Secure Copy Protocol). The script is versatile and can be configured for different environments and requirements.
 
