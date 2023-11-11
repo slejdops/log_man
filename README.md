@@ -16,13 +16,13 @@ Paramiko (for SCP functionality)
 Installation
 Ensure Python 3 is installed on your system. Install Paramiko using pip:
 
-bash
+
 Copy code
 pip install paramiko
 Usage
 The script is executed from the command line with various arguments to specify its behavior:
 
-css
+
 Copy code
 python logman.py --log-dir <path_to_log_directory> --log-pattern <log_file_pattern> --archive-dir <path_to_archive_directory> --max-log-size <max_log_file_size> --backup-count <number_of_backups> [--dry-run] [--scp-transfer] [--remote-host <hostname>] [--remote-path <remote_path>] [--ssh-user <username>] [--ssh-password <password>]
 Arguments
