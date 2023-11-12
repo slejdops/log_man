@@ -9,6 +9,7 @@ import argparse
 import paramiko
 import re
 import errno
+import traceback
 
 def parse_size(size_str):
     """
@@ -20,7 +21,7 @@ def parse_size(size_str):
         return int(size_str[:-1]) * units[size_str[-1]]
     return int(size_str)
 
-def initialize_logger():
+def initialize_console_logger():
     """
     Initializes and configures the logger to output to the console.
     """
@@ -31,7 +32,7 @@ def initialize_logger():
     logger.addHandler(console_handler)
     return logger
 
-def setup_logger(log_file, max_log_size, backup_count):
+def setup_rotating_logger(log_file, max_log_size, backup_count):
     """
     Configures a rotating logger for application logs.
     """
@@ -82,29 +83,35 @@ def zip_and_archive_logs(log_file, archive_dir, backup_count, script_logger, dry
                 except Exception as e:
                     script_logger.error(f"Error while archiving {backup_file}: {e}")
 
+
 def scp_transfer(local_path, remote_path, hostname, username, password, port=22, script_logger=None, dry_run=False):
     """
     Transfers a file to a remote server using SCP.
     """
-    action = "Transferring" if not dry_run else "[Dry Run] Would transfer"
-    script_logger.info(f"{action}: {local_path} to {remote_path} on {hostname}")
-
+    script_logger.info(f"Transferring: {local_path} to {remote_path} on {hostname}")
     if dry_run:
+        script_logger.info(f"[Dry Run] Would transfer: {local_path} to {remote_path} on {hostname}")
         return
 
+    if not os.path.exists(local_path):
+        script_logger.error(f"Local file does not exist: {local_path}")
+        return
+
+    script_logger.info(f"Transferring: {local_path} to {remote_path} on {hostname}")
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     try:
-        ssh.connect(hostname, port, username, password)
+        script_logger.info(f"Connecting to {hostname}...")
+        ssh.connect(hostname, port, username, password, timeout=10)  # Added timeout
         with ssh.open_sftp() as sftp:
             sftp.put(local_path, remote_path)
-            if script_logger:
-                script_logger.info(f"Successfully transferred {local_path} to {remote_path} on {hostname}")
+            script_logger.info(f"Successfully transferred {local_path} to {remote_path} on {hostname}")
     except Exception as e:
-        if script_logger:
-            script_logger.error(f"Failed to transfer file: {e}")
+        script_logger.error(f"Failed to transfer file: {e}")
+        script_logger.error("Traceback: " + traceback.format_exc())  # Detailed traceback
     finally:
         ssh.close()
+
 
 def find_logs(log_dir, log_pattern, script_logger):
     """
@@ -113,7 +120,8 @@ def find_logs(log_dir, log_pattern, script_logger):
     script_logger.info(f"Searching for log files in {log_dir} matching pattern {log_pattern}")
     return [os.path.join(log_dir, file) for file in os.listdir(log_dir) if re.match(log_pattern, file)]
 
-def main(log_dir, log_pattern, archive_dir, max_log_size, backup_count, dry_run=False, scp_transfer=False,
+
+def main(log_dir, log_pattern, archive_dir, max_log_size, backup_count, dry_run=False, enable_scp_transfer=False,
          remote_host=None, remote_path=None, ssh_user=None, ssh_password=None, script_logger=None):
     """
     Main process for log file rotation, archiving, and optional SCP transfer.
@@ -124,19 +132,20 @@ def main(log_dir, log_pattern, archive_dir, max_log_size, backup_count, dry_run=
         return
 
     # Ensure archive directory exists
-    if not os.path.exists(archive_dir):
-        os.makedirs(archive_dir)
-
     for log_file in matched_logs:
-        logger = setup_logger(log_file, max_log_size, backup_count)
+        logger = setup_rotating_logger(log_file, max_log_size, backup_count)
         zip_and_archive_logs(log_file, archive_dir, backup_count, script_logger, dry_run)
 
-        if scp_transfer and not dry_run:
+        if enable_scp_transfer:
             for i in range(1, backup_count + 1):
-                zip_file = f"{log_file}.{i}.zip"
+                zip_file = os.path.join(archive_dir, f"{os.path.basename(log_file)}.{i}.zip")
+                script_logger.info(f"Checking for zip file: {zip_file}")
                 if os.path.exists(zip_file):
-                    scp_transfer(zip_file, os.path.join(remote_path, os.path.basename(zip_file)),
-                                 remote_host, ssh_user, ssh_password, script_logger=script_logger, dry_run=dry_run)
+                    script_logger.info(f"Found zip file for transfer: {zip_file}")
+                    remote_file_path = os.path.join(remote_path or '', os.path.basename(zip_file))
+                    scp_transfer(zip_file, remote_file_path, remote_host, ssh_user, ssh_password, script_logger=script_logger, dry_run=bool(dry_run))
+                else:
+                    script_logger.error(f"Zip file not found: {zip_file}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Log rotation and archiving script.")
@@ -146,7 +155,7 @@ if __name__ == "__main__":
     parser.add_argument("--max-log-size", type=str, default="5M", help="Max log file size before rotation (e.g. 5M, 10G).")
     parser.add_argument("--backup-count", type=int, default=3, help="Number of backups to keep.")
     parser.add_argument("--dry-run", action="store_true", help="Simulates actions without making changes.")
-    parser.add_argument("--scp-transfer", action="store_true", help="Enable SCP transfer of archived files.")
+    parser.add_argument("--enable-scp-transfer", action="store_true", help="Enable SCP transfer of archived files.")
     parser.add_argument("--remote-host", type=str, help="Hostname or IP of the remote server.")
     parser.add_argument("--remote-path", type=str, help="Remote path for the SCP transfer.")
     parser.add_argument("--ssh-user", type=str, help="SSH username for the remote server.")
@@ -154,9 +163,9 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     
-    script_logger = initialize_logger()
+    script_logger = initialize_console_logger()
 
     main(args.log_dir, args.log_pattern, args.archive_dir, parse_size(args.max_log_size), args.backup_count, 
-         dry_run=args.dry_run, scp_transfer=args.scp_transfer, remote_host=args.remote_host, 
+         dry_run=args.dry_run, enable_scp_transfer=args.enable_scp_transfer, remote_host=args.remote_host, 
          remote_path=args.remote_path, ssh_user=args.ssh_user, ssh_password=args.ssh_password, 
          script_logger=script_logger)
