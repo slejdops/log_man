@@ -53,4 +53,4 @@ Rotate and archive logs in /var/logs, keeping a maximum file size of 5MB and up 
 Rotate, archive, and transfer logs to a remote server:
 
 
-```python logman.py --log-dir /var/logs --log-pattern ".*\.log" --archive-dir /var/archive --max-log-size 5M --backup-count 3 --scp-transfer --remote-host 192.168.1.100 --remote-path /remote/archive --ssh-user user --ssh-password pass`
+`python logman.py --log-dir /var/logs --log-pattern ".*\.log" --archive-dir /var/archive --max-log-size 5M --backup-count 3 --scp-transfer --remote-host 192.168.1.100 --remote-path /remote/archive --ssh-user user --ssh-password pass`
