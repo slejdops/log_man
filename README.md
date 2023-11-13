@@ -1,25 +1,28 @@
 # logman.py
 
 
-Overview
+##Overview
 This Python script is designed for managing log files in a robust and efficient manner. It facilitates log rotation, archiving of old log files, and offers an option to transfer archived logs to a remote server using SCP (Secure Copy Protocol). The script is versatile and can be configured for different environments and requirements.
 
-Features
+##Features
 Log Rotation: Manages the size of log files, rotating them once they reach a specified size.
+
 Archiving: Compresses and archives old log files, freeing up space while keeping historical data.
+
 SCP Transfer: Option to securely transfer archived logs to a remote server for centralized storage or backup.
+
 Flexible Configuration: Can be easily configured to handle different log file patterns, sizes, and backup strategies.
+
 Dry Run Mode: Simulates actions without making actual changes, useful for testing configurations.
-Requirements
+
+##Requirements
 Python 3
 Paramiko (for SCP functionality)
 Installation
 Ensure Python 3 is installed on your system. Install Paramiko using pip:
+`pip install paramiko`
 
-
-Copy code
-pip install paramiko
-Usage
+##Usage
 The script is executed from the command line with various arguments to specify its behavior:
 
 
