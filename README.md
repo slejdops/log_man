@@ -1,10 +1,10 @@
 # logman.py
 
 
-##Overview
+## Overview
 This Python script is designed for managing log files in a robust and efficient manner. It facilitates log rotation, archiving of old log files, and offers an option to transfer archived logs to a remote server using SCP (Secure Copy Protocol). The script is versatile and can be configured for different environments and requirements.
 
-##Features
+## Features
 Log Rotation: Manages the size of log files, rotating them once they reach a specified size.
 
 Archiving: Compresses and archives old log files, freeing up space while keeping historical data.
@@ -15,18 +15,18 @@ Flexible Configuration: Can be easily configured to handle different log file pa
 
 Dry Run Mode: Simulates actions without making actual changes, useful for testing configurations.
 
-##Requirements
+## Requirements
 Python 3
 Paramiko (for SCP functionality)
 Installation
 Ensure Python 3 is installed on your system. Install Paramiko using pip:
 `pip install paramiko`
 
-##Usage
+## Usage
 The script is executed from the command line with various arguments to specify its behavior:
 
 
-Copy code
+```
 python logman.py --log-dir <path_to_log_directory> --log-pattern <log_file_pattern> --archive-dir <path_to_archive_directory> --max-log-size <max_log_file_size> --backup-count <number_of_backups> [--dry-run] [--scp-transfer] [--remote-host <hostname>] [--remote-path <remote_path>] [--ssh-user <username>] [--ssh-password <password>]
 Arguments
 --log-dir: Directory containing the log files.
@@ -42,15 +42,15 @@ Arguments
 --ssh-password: SSH password for the remote server (required if --scp-transfer is used).
 Logging
 The script includes an internal logging system for monitoring its operations and troubleshooting.
+```
 
-Examples
+## Examples
 Rotate and archive logs in /var/logs, keeping a maximum file size of 5MB and up to 3 backups:
 
-css
-Copy code
-python logman.py --log-dir /var/logs --log-pattern ".*\.log" --archive-dir /var/archive --max-log-size 5M --backup-count 3
+```
+python logman.py --log-dir /var/logs --log-pattern ".*\.log" --archive-dir /var/archive --max-log-size 5M --backup-count 3```
+
 Rotate, archive, and transfer logs to a remote server:
 
-css
-Copy code
-python logman.py --log-dir /var/logs --log-pattern ".*\.log" --archive-dir /var/archive --max-log-size 5M --backup-count 3 --scp-transfer --remote-host 192.168.1.100 --remote-path /remote/archive --ssh-user user --ssh-password pass
+```
+python logman.py --log-dir /var/logs --log-pattern ".*\.log" --archive-dir /var/archive --max-log-size 5M --backup-count 3 --scp-transfer --remote-host 192.168.1.100 --remote-path /remote/archive --ssh-user user --ssh-password pass```
