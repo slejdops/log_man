@@ -122,7 +122,7 @@ def find_logs(log_dir, log_pattern, script_logger):
 
 
 def main(log_dir, log_pattern, archive_dir, max_log_size, backup_count, dry_run=False, enable_scp_transfer=False,
-         remote_host=None, remote_path=None, ssh_user=None, ssh_password=None, script_logger=None):
+         remote_host=None, remote_path=None, ssh_user=None, ssh_password=None, script_logger=None, empty_archive_after_transfer=False):
     """
     Main process for log file rotation, archiving, and optional SCP transfer.
     """
@@ -146,6 +146,18 @@ def main(log_dir, log_pattern, archive_dir, max_log_size, backup_count, dry_run=
                     scp_transfer(zip_file, remote_file_path, remote_host, ssh_user, ssh_password, script_logger=script_logger, dry_run=bool(dry_run))
                 else:
                     script_logger.error(f"Zip file not found: {zip_file}")
+            if empty_archive_after_transfer:
+                script_logger.info(f"Emptying the archive directory: {archive_dir}")
+
+            for f in os.listdir(archive_dir):
+                file_path = os.path.join(archive_dir, f)
+                try:
+                    if os.path.isfile(file_path):
+                        os.unlink(file_path)
+                    elif os.path.isdir(file_path):  # if you also want to remove directories
+                        shutil.rmtree(file_path)
+                except Exception as e:
+                    script_logger.error(f"Failed to delete {file_path}: {e}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Log rotation and archiving script.")
@@ -160,6 +172,7 @@ if __name__ == "__main__":
     parser.add_argument("--remote-path", type=str, help="Remote path for the SCP transfer.")
     parser.add_argument("--ssh-user", type=str, help="SSH username for the remote server.")
     parser.add_argument("--ssh-password", type=str, help="SSH password for the remote server.")
+    parser.add_argument("--empty-archive-after-transfer", action="store_true", help="Empty archive directory after SCP transfer is complete.")
 
     args = parser.parse_args()
     
@@ -168,4 +181,4 @@ if __name__ == "__main__":
     main(args.log_dir, args.log_pattern, args.archive_dir, parse_size(args.max_log_size), args.backup_count, 
          dry_run=args.dry_run, enable_scp_transfer=args.enable_scp_transfer, remote_host=args.remote_host, 
          remote_path=args.remote_path, ssh_user=args.ssh_user, ssh_password=args.ssh_password, 
-         script_logger=script_logger)
+         script_logger=script_logger, empty_archive_after_transfer=args.empty_archive_after_transfer)
